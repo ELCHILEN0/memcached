@@ -7,7 +7,7 @@ pub trait CacheReplacementPolicy {
     fn new() -> Self;
     fn update(&mut self, key: Key);
     fn remove(&mut self, key: Key);
-    fn next_candidate(&mut self) -> Option<Key>;
+    fn evict_next(&mut self) -> Option<Key>;
 }
 
 pub struct LRU {
@@ -44,7 +44,7 @@ impl CacheReplacementPolicy for LRU {
         };
     }
     
-    fn next_candidate(&mut self) -> Option<Key> {
+    fn evict_next(&mut self) -> Option<Key> {
         match self.key_history.pop_front() {
             Some(key) => {
                 self.key_map.remove(&key);

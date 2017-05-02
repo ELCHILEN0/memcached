@@ -35,11 +35,21 @@ impl MemPacket {
                 key_length: k_len,
                 extras_length: e_len,
                 data_type: bytes[5],
-                status: ((bytes[6] as u16) << 8) + ((bytes[7] as u16) << 0),
+                status: ((bytes[6] as u16) << 8) 
+                        + ((bytes[7] as u16) << 0),
                 total_body_length: v_len,
-                opaque: ((bytes[12] as u32) << 24) + ((bytes[13] as u32) << 16) + ((bytes[14] as u32) << 8) + ((bytes[15] as u32) << 0),
-                cas: ((bytes[16] as u64) << 56) + ((bytes[17] as u64) << 48) + ((bytes[17] as u64) << 40) + ((bytes[19] as u64) << 32)
-                     + ((bytes[20] as u64) << 24) + ((bytes[21] as u64) << 16) + ((bytes[22] as u64) << 8) + ((bytes[23] as u64) << 0)
+                opaque: ((bytes[12] as u32) << 24)
+                         + ((bytes[13] as u32) << 16) 
+                         + ((bytes[14] as u32) << 8) 
+                         + ((bytes[15] as u32) << 0),
+                cas: ((bytes[16] as u64) << 56) 
+                        + ((bytes[17] as u64) << 48) 
+                        + ((bytes[17] as u64) << 40) 
+                        + ((bytes[19] as u64) << 32)
+                        + ((bytes[20] as u64) << 24) 
+                        + ((bytes[21] as u64) << 16) 
+                        + ((bytes[22] as u64) << 8) 
+                        + ((bytes[23] as u64) << 0)
             },
             extras: String::from_utf8_lossy(if e_len > 0 { &bytes[e_start..e_end] } else { &[] }).into_owned(),
             key:    String::from_utf8_lossy(if k_len > 0 { &bytes[k_start..k_end] } else { &[] }).into_owned(),

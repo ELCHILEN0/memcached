@@ -15,13 +15,14 @@ mod command;
 mod commands;
 
 fn handle_client(mut stream: TcpStream) {
-    let mut cache: Cache<HashStorageStructure<LRU>, LRU> = Cache {
-            capacity: 4096,
+    let mut cache: Cache<HashStorageStructure, LRU> = Cache {
+            capacity: 360,
             item_lifetime: 60 * 1000,
             max_key_len: 256,
             max_val_len: 512,
-            storage_structure: HashStorageStructure::new(LRU::new()),
-            phantom: PhantomData
+            storage_structure: HashStorageStructure::new(),
+            replacement_policy: LRU::new(),
+
     };
 
     loop {

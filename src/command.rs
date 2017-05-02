@@ -8,7 +8,7 @@ use cache::replacement_policy::CacheReplacementPolicy;
 use commands;
 use cache;
 
-fn handle_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(packet: MemPacket, cache: &mut Cache<T, R>) -> Option<MemPacket> {
+fn handle_command<T: CacheStorageStructure, R: CacheReplacementPolicy>(packet: MemPacket, cache: &mut Cache<T, R>) -> Option<MemPacket> {
     println!("handle_command");
     println!("{:?}", packet.header);
     println!("{:?}", packet);
@@ -34,7 +34,7 @@ fn handle_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(packet
 }
 
 // TODO: This will eventually be removed once a client is implemented, for now this exists for the purposes of telnet
-pub fn parse_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(command: &str, cache: &mut Cache<T, R>) -> Option<MemPacket> {
+pub fn parse_command<T: CacheStorageStructure, R: CacheReplacementPolicy>(command: &str, cache: &mut Cache<T, R>) -> Option<MemPacket> {
     let mut iter = command.split_whitespace();
 
     let mut extra_bytes: Vec<u8> = Vec::new();

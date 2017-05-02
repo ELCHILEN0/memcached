@@ -7,7 +7,7 @@ use cache::value::Value;
 use cache::storage_structure::CacheStorageStructure;
 use cache::replacement_policy::CacheReplacementPolicy;
 
-pub fn get_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(request: MemPacket, cache: &mut Cache<T, R>) -> Option<MemPacket> {
+pub fn get_command<T: CacheStorageStructure, R: CacheReplacementPolicy>(request: MemPacket, cache: &mut Cache<T, R>) -> Option<MemPacket> {
     println!("get_command");
 
     let mut response = MemPacket::new(false);
