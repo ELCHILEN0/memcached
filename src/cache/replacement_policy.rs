@@ -45,6 +45,14 @@ impl CacheReplacementPolicy for LRU {
     }
     
     fn next_candidate(&mut self) -> Option<Key> {
-        self.key_history.pop_front()
+        // TODO: Remove from key_map
+        // self.key_map.remove(self.key_history.get(0))
+        match self.key_history.pop_front() {
+            Some(key) => {
+                self.key_map.remove(&key);
+                Some(key)
+            },
+            None => None
+        }
     }
 }
