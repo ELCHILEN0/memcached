@@ -8,6 +8,7 @@ pub trait CacheStorageStructure<T> {
     fn new(replacement_policy: T) -> Self;
     fn get(&mut self, key: Key) -> Option<Value>;
     fn set(&mut self, key: Key, value: Value);
+    fn delete(&mut self, key: Key);
     fn contains(&mut self, key: Key) -> bool;
 }
 
@@ -43,6 +44,16 @@ impl<T: CacheReplacementPolicy> CacheStorageStructure<T> for HashStorageStructur
                 self.data.push(value);
                 self.rid_map.insert(key, self.data.len() - 1);
             },
+        };
+    }
+
+    fn delete(&mut self, key: Key) {
+        match self.rid_map.get(&key).cloned() {
+            Some(index) => {
+                self.data.remove(index);
+                self.rid_map.remove(&key);
+            },
+            None => {},
         };
     }
 

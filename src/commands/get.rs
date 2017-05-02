@@ -13,7 +13,7 @@ pub fn get_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(reque
     let mut response = MemPacket::new(false);
     response.header.with_opcode(request.header.opcode);
 
-    if request.extras.len() > 0 || request.value.len() > 0 {
+    if request.has_extras() || request.has_value() {
         response.header.with_status(0x0004);
         return Some(response) ;
     }

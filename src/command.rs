@@ -24,6 +24,8 @@ fn handle_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(packet
         0x00 => commands::get::get_command(packet, cache),
         0x01 => commands::set::set_command(packet, cache),
         0x02 => commands::set::add_command(packet, cache),
+        0x03 => commands::set::replace_command(packet, cache),
+        0x04 => commands::delete::delete_command(packet, cache),
         _ => {
             response.header.with_status(0x0081);
             Some(response) 
@@ -40,35 +42,32 @@ pub fn parse_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(com
     let mut value_bytes: Vec<u8> = Vec::new();
 
     let code: u8;
+    // TODO: Add param length validation? probably not if we implement a client
     match iter.next() {
         Some(cmd) => {
             match cmd.to_uppercase().borrow() {
                 "GET" => {
                     code = 0x00;
-                    let key = iter.next().unwrap();
-                    key_bytes = Vec::from(key.as_bytes());
+                    key_bytes = Vec::from(iter.next().unwrap().as_bytes());
                 },
                 "SET" => {
                     code = 0x01;
-                    let key = iter.next().unwrap();
-                    let value = iter.next().unwrap();
-                    key_bytes = Vec::from(key.as_bytes());
-                    value_bytes = Vec::from(value.as_bytes());       
+                    key_bytes = Vec::from(iter.next().unwrap().as_bytes());
+                    value_bytes = Vec::from(iter.next().unwrap().as_bytes());        
                 },
                 "ADD" => {
                     code = 0x02;
-                    let key = iter.next().unwrap();
-                    let value = iter.next().unwrap();
-                    key_bytes = Vec::from(key.as_bytes());
-                    value_bytes = Vec::from(value.as_bytes());           
+                    key_bytes = Vec::from(iter.next().unwrap().as_bytes());
+                    value_bytes = Vec::from(iter.next().unwrap().as_bytes());           
                 },
                 "REPLACE" => {
                     code = 0x03;
-                    // TODO:            
+                    key_bytes = Vec::from(iter.next().unwrap().as_bytes());
+                    value_bytes = Vec::from(iter.next().unwrap().as_bytes());             
                 },
                 "DELETE" => {
                     code = 0x04;
-                    // TODO:            
+                    key_bytes = Vec::from(iter.next().unwrap().as_bytes());          
                 },
                 "INCREMENT" => {
                     code = 0x05;

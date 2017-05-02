@@ -74,6 +74,18 @@ impl MemPacket {
         self
     }
 
+    pub fn has_key(&self) -> bool {
+        self.header.key_length > 0 && self.key.len() > 0
+    }
+
+    pub fn has_extras(&self) -> bool {
+        self.header.extras_length > 0 && self.extras.len() > 0
+    }
+
+    pub fn has_value(&self) -> bool {
+        self.header.total_body_length - self.header.key_length as u32 - self.header.extras_length as u32 > 0 && self.value.len() > 0
+    }
+
     pub fn bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
