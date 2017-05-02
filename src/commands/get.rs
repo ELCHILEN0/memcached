@@ -25,7 +25,7 @@ pub fn get_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(reque
     response.with_key(String::from_utf8_lossy(key_bytes.as_slice()).into_owned());
     response.with_extras(String::from_utf8_lossy(extra_bytes.as_slice()).into_owned());
 
-    match cache.storage_structure.get(Key::new(request.key)) {
+    match cache.get(Key::new(request.key)) {
         Some(value) => {
             response.with_value(value.item.clone());
         },
