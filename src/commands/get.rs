@@ -27,7 +27,7 @@ pub fn get_command<T: CacheStorageStructure, R: CacheReplacementPolicy>(request:
 
     match cache.get(Key::new(request.key)) {
         Some(value) => {
-            response.with_value(value.item.clone());
+            response.with_value(value.value.item.clone());
         },
         None => {
             response.header.with_status(0x0001);

@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use cache::key::Key;
 use cache::value::Value;
+use cache::data_entry::DataEntry;
 use cache::storage_structure::CacheStorageStructure;
 use cache::replacement_policy::CacheReplacementPolicy;
 use cache::error::CacheError;
@@ -16,7 +17,7 @@ pub struct Cache<T, R> {
 }
 
 impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
-    pub fn get(&mut self, key: Key) -> Option<Value> {
+    pub fn get(&mut self, key: Key) -> Option<DataEntry> {
         self.storage_structure.get(key)
     }
 
@@ -35,8 +36,10 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
             try!(self.evict_next());
         }
 
-        self.replacement_policy.update(key.clone());
-        self.storage_structure.set(key, value)
+        let index = self.replacement_policy.update(key.clone());
+        try!(self.storage_structure.set(key.clone(), value));
+        try!(self.storage_structure.move_to_index(key, index));
+        Ok(())
     }
 
     pub fn remove(&mut self, key: Key) {
@@ -50,10 +53,15 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
 
     fn evict_next(&mut self) -> Result<(), CacheError> {
         match self.replacement_policy.evict_next() {
-            Some(evict_key) => {
-                match self.storage_structure.remove(evict_key) {
-                    Ok(evicted_value) => Ok(()),
-                    Err(err) => Err(CacheError::EvictionFailure)
+            Some(evict_index) => {
+                match self.storage_structure.get_index(evict_index) {
+                    Some(evict) => {
+                        match self.storage_structure.remove(evict.key) {
+                            Ok(evicted_value) => Ok(()),
+                            Err(err) => Err(CacheError::EvictionFailure)
+                        }
+                    },
+                    None => Err(CacheError::EvictionFailure)
                 }
             },
             None => Err(CacheError::EvictionFailure)

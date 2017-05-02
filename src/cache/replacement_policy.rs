@@ -5,52 +5,60 @@ use cache::value::Value;
 
 pub trait CacheReplacementPolicy {
     fn new() -> Self;
-    fn update(&mut self, key: Key);
+    fn update(&mut self, key: Key) -> usize;
     fn remove(&mut self, key: Key);
-    fn evict_next(&mut self) -> Option<Key>;
+    fn evict_next(&mut self) -> Option<usize>;
+    // fn evict_next(&mut self) -> Option<Key>;
 }
 
-pub struct LRU {
-    key_map: HashMap<Key, usize>,
-    key_history: VecDeque<Key>,
-}
+// pub struct LRU {
+//     key_map: HashMap<Key, usize>,
+//     key_history: VecDeque<Key>,
+// }
+
+pub struct LRU;
 
 impl CacheReplacementPolicy for LRU {
     fn new() -> Self {
         LRU {
-            key_map: HashMap::new(),
-            key_history: VecDeque::new(),
+            // key_map: HashMap::new(),
+            // key_history: VecDeque::new(),
         }
     }
 
-    fn update(&mut self, key: Key) {
-        match self.key_map.get(&key).cloned() {
-            Some(index) => {
-                self.key_history.remove(index);
-            },
-            None => {}
-        };
-        self.key_history.push_back(key.clone());
-        self.key_map.insert(key, self.key_history.len() - 1);
+    fn update(&mut self, key: Key) -> usize {
+        0
+
+        // match self.key_map.get(&key).cloned() {
+        //     Some(index) => {
+        //         self.key_history.remove(index);
+        //     },
+        //     None => {}
+        // };
+        // self.key_history.push_back(key.clone());
+        // self.key_map.insert(key, self.key_history.len() - 1);
     }
 
     fn remove(&mut self, key: Key) {
-        match self.key_map.get(&key).cloned() {
-            Some(index) => {
-                self.key_history.remove(index);
-                self.key_map.remove(&key);
-            },
-            None => {}
-        };
+        // match self.key_map.get(&key).cloned() {
+        //     Some(index) => {
+        //         self.key_history.remove(index);
+        //         self.key_map.remove(&key);
+        //     },
+        //     None => {}
+        // };
     }
     
-    fn evict_next(&mut self) -> Option<Key> {
-        match self.key_history.pop_front() {
-            Some(key) => {
-                self.key_map.remove(&key);
-                Some(key)
-            },
-            None => None
-        }
+    fn evict_next(&mut self) -> Option<usize> {
+        Some(0)
     }
+    // fn evict_next(&mut self) -> Option<Key> {
+        // match self.key_history.pop_front() {
+        //     Some(key) => {
+        //         self.key_map.remove(&key);
+        //         Some(key)
+        //     },
+        //     None => None
+        // }
+    // }
 }
