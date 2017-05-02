@@ -23,6 +23,7 @@ fn handle_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(packet
     match packet.header.opcode {
         0x00 => commands::get::get_command(packet, cache),
         0x01 => commands::set::set_command(packet, cache),
+        0x02 => commands::set::add_command(packet, cache),
         _ => {
             response.header.with_status(0x0081);
             Some(response) 
@@ -56,7 +57,10 @@ pub fn parse_command<R: CacheReplacementPolicy, T: CacheStorageStructure<R>>(com
                 },
                 "ADD" => {
                     code = 0x02;
-                    // TODO:            
+                    let key = iter.next().unwrap();
+                    let value = iter.next().unwrap();
+                    key_bytes = Vec::from(key.as_bytes());
+                    value_bytes = Vec::from(value.as_bytes());           
                 },
                 "REPLACE" => {
                     code = 0x03;

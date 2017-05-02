@@ -8,6 +8,7 @@ pub trait CacheStorageStructure<T> {
     fn new(replacement_policy: T) -> Self;
     fn get(&mut self, key: Key) -> Option<Value>;
     fn set(&mut self, key: Key, value: Value);
+    fn contains(&mut self, key: Key) -> bool;
 }
 
 pub struct HashStorageStructure<T> {
@@ -43,6 +44,9 @@ impl<T: CacheReplacementPolicy> CacheStorageStructure<T> for HashStorageStructur
                 self.rid_map.insert(key, self.data.len() - 1);
             },
         };
+    }
 
+    fn contains(&mut self, key: Key) -> bool {
+        self.rid_map.contains_key(&key)
     }
 }
