@@ -1,0 +1,6 @@
+[package]
+name = "memcached"
+version = "0.1.0"
+authors = ["jnani.weibel <jnani.weibel@visioncritical.com>"]
+
+[dependencies]
