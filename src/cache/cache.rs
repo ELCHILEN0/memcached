@@ -7,6 +7,7 @@ use cache::storage_structure::CacheStorageStructure;
 use cache::replacement_policy::CacheReplacementPolicy;
 use cache::error::CacheError;
 
+// TODO: Add metrics
 pub struct Cache<T, R> {
     pub capacity: usize,
     pub item_lifetime: u64,
@@ -25,23 +26,26 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     }
 
     pub fn set(&mut self, key: Key, value: Value) -> Result<(), CacheError> {
-        // Ensure that adding a new element will not overflow the capacity of the cache
-        let current_elem_size = match self.storage_structure.get(key.clone()) {
+        let entry = DataEntry::new(key.clone(), value);
+
+        // Retrieve the current size of the entry in the cache
+        let current_elem_size = match self.storage_structure.get(key) {
             Some((curr_index, curr_entry)) => curr_entry.len(),
             None => 0,
         };
 
-        // Evict until there is sufficient space, TODO: Add error handling
+        // Evict until there is sufficient space
         loop {
-            if self.storage_structure.size() + value.len() - current_elem_size <= self.capacity {
+            if self.storage_structure.size() + entry.len() - current_elem_size <= self.capacity {
                 break;
             }
 
             try!(self.evict_next());
         }
 
-        // Set the value in the cache, then invoke the replacement policy on the index
-        let (index, entry) = self.storage_structure.set(key.clone(), value);
+        // Set the value in the cache
+        let (index, entry) = self.storage_structure.set(entry);
+        // Update replacement policy
         self.replacement_policy.update(index);
         
         Ok(())

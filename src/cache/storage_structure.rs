@@ -22,8 +22,6 @@ pub trait CacheStorageStructure {
     fn new() -> Self;
 
     fn size(&self) -> usize;
-
-    // TODO: Cleanup these convoluted return types
     
     /**
      * Returns the index and entry if it exists
@@ -34,8 +32,8 @@ pub trait CacheStorageStructure {
     /**
      * Set a key, value pair and return the new index and the removed entry if it exists
      */
-    fn set(&mut self, key: Key, value: Value) -> (usize, Option<DataEntry>);
-    fn set_index(&mut self, index: usize, key: Key, value: Value) -> (usize, Option<DataEntry>);
+    fn set(&mut self, entry: DataEntry) -> (usize, Option<DataEntry>);
+    fn set_index(&mut self, index: usize, entry: DataEntry) -> (usize, Option<DataEntry>);
 
     /**
      * Remove a key, value pair and return the old index and entry if it exists
@@ -85,23 +83,22 @@ impl CacheStorageStructure for NaiveStorageStructure {
         }
     }    
 
-    fn set(&mut self, key: Key, value: Value) -> (usize, Option<DataEntry>) {
-        let new = DataEntry::new(key.clone(), value);
-        self.size += new.len();  
+    fn set(&mut self, entry: DataEntry) -> (usize, Option<DataEntry>) {
+        self.size += entry.len();  
 
-        match self.remove(key) {
-            Some((index, entry)) => {
-                self.data.insert(index, new);
-                (index, Some(entry))
+        match self.remove(entry.key.clone()) {
+            Some((index, old_entry)) => {
+                self.data.insert(index, entry);
+                (index, Some(old_entry))
             },
             None => {
-                self.data.push(new);
+                self.data.push(entry);
                 (self.data.len() - 1, None)
             }
         }
     }
 
-    fn set_index(&mut self, index: usize, key: Key, value: Value) -> (usize, Option<DataEntry>) {
+    fn set_index(&mut self, index: usize, entry: DataEntry) -> (usize, Option<DataEntry>) {
         unimplemented!()
     }    
 
