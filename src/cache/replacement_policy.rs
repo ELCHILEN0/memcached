@@ -45,7 +45,11 @@ impl CacheReplacementPolicy for Clock {
     }
 
     fn update(&mut self, index: usize) -> Option<usize> {
-        self.referenced.insert(index, true);
+        if index < self.referenced.len() {
+            self.referenced[index] = true;
+        } else {
+            self.referenced.insert(index, true);
+        }
         None
     }
 
