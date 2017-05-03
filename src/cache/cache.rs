@@ -20,7 +20,10 @@ pub struct Cache<T, R> {
 impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     pub fn get(&mut self, key: Key) -> Option<DataEntry> {
         match self.storage_structure.get(key) {
-            Some((index, entry)) => Some(entry),
+            Some((index, entry)) => {
+                self.replacement_policy.update(index);
+                Some(entry)
+            },
             None => None
         }
     }
