@@ -10,7 +10,7 @@ mod packet;
 
 use cache::cache::Cache;
 use cache::storage_structure::{CacheStorageStructure, NaiveStorageStructure};
-use cache::replacement_policy::{CacheReplacementPolicy, LRU, Clock};
+use cache::replacement_policy::{CacheReplacementPolicy, LRU, Clock, LFU};
 mod cache;
 
 mod command;
@@ -24,7 +24,8 @@ fn handle_client(mut stream: TcpStream) {
             max_val_len: 512,
             storage_structure: NaiveStorageStructure::new(),
             // replacement_policy: LRU::new(),
-            replacement_policy: Clock::new(),
+            // replacement_policy: Clock::new(),
+            replacement_policy: LFU::new(),
 
     };
 

@@ -15,9 +15,14 @@ pub trait CacheReplacementPolicy {
 pub struct LRU {
     recently_used: VecDeque<usize>, 
 }
+
 pub struct Clock {
     hand: usize,
-    referenced: Vec<bool>,
+    referenced_list: Vec<bool>,
+}
+
+pub struct LFU {
+    frequency_list: Vec<usize>, // (index, hits)
 }
 
 impl CacheReplacementPolicy for LRU {
@@ -62,30 +67,29 @@ impl CacheReplacementPolicy for Clock {
     fn new() -> Self {
         Clock {
             hand: 0,
-            referenced: Vec::new(),
+            referenced_list: Vec::new(),
          }
     }
 
     fn update(&mut self, index: usize) {
-        if index < self.referenced.len() {
-            self.referenced[index] = true;
+        if index < self.referenced_list.len() {
+            self.referenced_list[index] = true;
         } else {
-            self.referenced.insert(index, true);
+            self.referenced_list.insert(index, true);
         }
     }
 
     fn remove(&mut self, index: usize) {
-        self.referenced.remove(index);
+        self.referenced_list.remove(index);
     }
     
     fn evict_next(&mut self) -> Result<usize, CacheError> {        
-        let target_key: Key;
         'outer: loop {
-            if self.referenced.len() == 0 {
+            if self.referenced_list.len() == 0 {
                 return Err(CacheError::EvictionFailure);
             }
 
-            for value in self.referenced.iter_mut().skip(self.hand) {
+            for value in self.referenced_list.iter_mut().skip(self.hand) {
                 self.hand += 1;
 
                 if *value {
@@ -98,7 +102,46 @@ impl CacheReplacementPolicy for Clock {
             self.hand = 0;
         }
 
-        self.referenced.remove(self.hand - 1);
+        self.referenced_list.remove(self.hand - 1);
         Ok(self.hand - 1)
+    }
+}
+
+impl CacheReplacementPolicy for LFU {
+    fn new() -> Self {
+        LFU { 
+            frequency_list: Vec::new()
+        }
+    }
+
+    fn update(&mut self, index: usize) {
+        if index < self.frequency_list.len() {
+            self.frequency_list[index] = self.frequency_list[index] + 1;
+        } else {
+            self.frequency_list.insert(index, 1);
+        }
+    }
+
+    fn remove(&mut self, index: usize) {
+        self.frequency_list.remove(index);
+    }
+    
+    fn evict_next(&mut self) -> Result<usize, CacheError> {
+        if self.frequency_list.len() == 0 {
+            return Err(CacheError::EvictionFailure);
+        }
+
+        let mut index = 0;
+        let mut target_index = 0;
+        for frequency in self.frequency_list.iter() {
+            if *frequency < self.frequency_list[target_index] {
+                target_index = index;
+            }
+
+            index += 1;
+        }
+
+        self.frequency_list.remove(target_index);
+        Ok(target_index)
     }
 }
