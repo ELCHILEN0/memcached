@@ -61,9 +61,10 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     }
 
     fn evict_next(&mut self) -> Result<(), CacheError> {
-        // Determine the next candidate and remove it
+        // Disasociate the index from the replacement policy
         match self.replacement_policy.evict_next() {
             Ok(evict_index) => {
+                // Remove the index from the cache
                 match self.storage_structure.remove_index(evict_index) {
                     Some((index, evicted)) => Ok(()),
                     None => Err(CacheError::EvictionFailure)
