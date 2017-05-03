@@ -40,14 +40,9 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
             try!(self.evict_next());
         }
 
-        // Add/Update the value in the cache
+        // Set the value in the cache, then invoke the replacement policy on the index
         let (index, entry) = self.storage_structure.set(key.clone(), value);
         self.replacement_policy.update(index);
-        // Update the associated cache replacement policy, returning the new index, move it there
-        // match self.replacement_policy.update(index) {
-        //     Some(new_index) => try!(self.storage_structure.move_entry(key, new_index)),
-        //     None => {}
-        // }
         
         Ok(())
     }
@@ -68,13 +63,13 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     fn evict_next(&mut self) -> Result<(), CacheError> {
         // Determine the next candidate and remove it
         match self.replacement_policy.evict_next() {
-            Some(evict_index) => {
+            Ok(evict_index) => {
                 match self.storage_structure.remove_index(evict_index) {
                     Some((index, evicted)) => Ok(()),
                     None => Err(CacheError::EvictionFailure)
                 }
             },
-            None => Err(CacheError::EvictionFailure)
+            Err(err) => Err(CacheError::EvictionFailure)
         }
     }
 }

@@ -23,8 +23,8 @@ fn handle_client(mut stream: TcpStream) {
             max_key_len: 256,
             max_val_len: 512,
             storage_structure: NaiveStorageStructure::new(),
-            replacement_policy: LRU::new(),
-            // replacement_policy: Clock::new(),
+            // replacement_policy: LRU::new(),
+            replacement_policy: Clock::new(),
 
     };
 
