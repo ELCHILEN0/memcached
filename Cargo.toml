@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["jnani.weibel <jnani.weibel@visioncritical.com>"]
 
 [dependencies]
+linked-hash-map = "0.4.2"

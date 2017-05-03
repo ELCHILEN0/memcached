@@ -24,12 +24,13 @@ pub trait CacheStorageStructure {
     fn size(&self) -> usize;
 
     fn get(&mut self, key: Key) -> Option<DataEntry>;
-    fn set(&mut self, key: Key, value: Value) -> Result<(), CacheError>;
+    fn set(&mut self, key: Key, value: Value) -> Result<usize, CacheError>;
     fn remove(&mut self, key: Key) -> Result<DataEntry, CacheError>;
     fn contains(&mut self, key: Key) -> bool;
 
-    fn get_index(&mut self, index: usize) -> Option<DataEntry>;
-    fn move_to_index(&mut self, key: Key, index: usize) -> Result<(), CacheError>;
+    fn get_index(&mut self, key: Key) -> Option<usize>;
+    fn get_with_index(&mut self, index: usize) -> Option<DataEntry>;
+    fn move_entry(&mut self, key: Key, index: usize) -> Result<(), CacheError>;
 }
 
 pub struct HashStorageStructure {
@@ -51,10 +52,6 @@ impl CacheStorageStructure for HashStorageStructure {
         self.size
     }
 
-    fn get_index(&mut self, index: usize) -> Option<DataEntry> {
-        self.data.get(index).cloned()
-    }
-
     fn get(&mut self, key: Key) -> Option<DataEntry> {
         match self.rid_map.get(&key).cloned() {
             Some(index) => Some(self.data[index].clone()),
@@ -62,7 +59,7 @@ impl CacheStorageStructure for HashStorageStructure {
         }
     }
 
-    fn set(&mut self, key: Key, value: Value) -> Result<(), CacheError> {
+    fn set(&mut self, key: Key, value: Value) -> Result<usize, CacheError> {
         self.size += value.len();                
         
         let new = DataEntry::new(key.clone(), value);
@@ -70,13 +67,14 @@ impl CacheStorageStructure for HashStorageStructure {
             Some(index) => {
                 self.data.remove(index);
                 self.data.insert(index, new);
+                Ok(index)
             },
             None => {
                 self.data.push(new);
                 self.rid_map.insert(key, self.data.len() - 1);
+                Ok(self.data.len() - 1)
             },
-        };
-        Ok(())
+        }
     }
 
     fn remove(&mut self, key: Key) -> Result<DataEntry, CacheError> {
@@ -95,7 +93,15 @@ impl CacheStorageStructure for HashStorageStructure {
         self.rid_map.contains_key(&key)
     }
 
-    fn move_to_index(&mut self, key: Key, index: usize) -> Result<(), CacheError> {
+    fn get_index(&mut self, key: Key) -> Option<usize> {
+        self.rid_map.get(&key).cloned()
+    }
+
+    fn get_with_index(&mut self, index: usize) -> Option<DataEntry> {
+        self.data.get(index).cloned()
+    }
+
+    fn move_entry(&mut self, key: Key, index: usize) -> Result<(), CacheError> {
         match self.rid_map.get(&key).cloned() {
             Some(index) => {
                 let removed = self.data.remove(index);

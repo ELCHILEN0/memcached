@@ -28,6 +28,7 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
             None => 0,
         };
 
+        // Evict until there is sufficient space, TODO: Add error handling
         loop {
             if self.storage_structure.size() + value.len() - current_elem_size <= self.capacity {
                 break;
@@ -36,15 +37,28 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
             try!(self.evict_next());
         }
 
-        let index = self.replacement_policy.update(key.clone());
-        try!(self.storage_structure.set(key.clone(), value));
-        try!(self.storage_structure.move_to_index(key, index));
+        // Add/Update the value in the cache, return its current index
+        let index = try!(self.storage_structure.set(key.clone(), value));
+        // Update the associated cache replacement policy, returning the new index, move it there
+        match self.replacement_policy.update(index) {
+            Some(new_index) => try!(self.storage_structure.move_entry(key, new_index)),
+            None => {}
+        }
+        
         Ok(())
     }
 
     pub fn remove(&mut self, key: Key) {
-        self.replacement_policy.remove(key.clone());
-        self.storage_structure.remove(key);
+        // TODO: Remove index
+        match self.storage_structure.get_index(key.clone()) {
+            Some(index) => {
+                self.replacement_policy.remove(index);
+                self.storage_structure.remove(key);
+            },
+            None => {
+                self.storage_structure.remove(key);
+            },
+        };
     }
 
     pub fn contains(&mut self, key: Key) -> bool {
@@ -52,10 +66,13 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     }
 
     fn evict_next(&mut self) -> Result<(), CacheError> {
+        // Determine the next candidate and remove it
         match self.replacement_policy.evict_next() {
             Some(evict_index) => {
-                match self.storage_structure.get_index(evict_index) {
+                // Given an index, find the entry
+                match self.storage_structure.get_with_index(evict_index) {
                     Some(evict) => {
+                        // Remove the entry from the cache
                         match self.storage_structure.remove(evict.key) {
                             Ok(evicted_value) => Ok(()),
                             Err(err) => Err(CacheError::EvictionFailure)

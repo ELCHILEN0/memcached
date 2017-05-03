@@ -1,64 +1,77 @@
 use std::collections::{HashMap, VecDeque};
+use linked_hash_map::LinkedHashMap;
 
 use cache::key::Key;
 use cache::value::Value;
 
 pub trait CacheReplacementPolicy {
     fn new() -> Self;
-    fn update(&mut self, key: Key) -> usize;
-    fn remove(&mut self, key: Key);
+    fn update(&mut self, index: usize) -> Option<usize>;
+    fn remove(&mut self, index: usize);
     fn evict_next(&mut self) -> Option<usize>;
     // fn evict_next(&mut self) -> Option<Key>;
 }
 
-// pub struct LRU {
-//     key_map: HashMap<Key, usize>,
-//     key_history: VecDeque<Key>,
-// }
-
 pub struct LRU;
+pub struct Clock {
+    hand: usize,
+    referenced: Vec<bool>,
+}
 
 impl CacheReplacementPolicy for LRU {
     fn new() -> Self {
-        LRU {
-            // key_map: HashMap::new(),
-            // key_history: VecDeque::new(),
-        }
+        LRU { }
     }
 
-    fn update(&mut self, key: Key) -> usize {
-        0
-
-        // match self.key_map.get(&key).cloned() {
-        //     Some(index) => {
-        //         self.key_history.remove(index);
-        //     },
-        //     None => {}
-        // };
-        // self.key_history.push_back(key.clone());
-        // self.key_map.insert(key, self.key_history.len() - 1);
+    fn update(&mut self, index: usize) -> Option<usize> {
+        Some(0)
     }
 
-    fn remove(&mut self, key: Key) {
-        // match self.key_map.get(&key).cloned() {
-        //     Some(index) => {
-        //         self.key_history.remove(index);
-        //         self.key_map.remove(&key);
-        //     },
-        //     None => {}
-        // };
+    fn remove(&mut self, index: usize) {
+
     }
     
     fn evict_next(&mut self) -> Option<usize> {
         Some(0)
     }
-    // fn evict_next(&mut self) -> Option<Key> {
-        // match self.key_history.pop_front() {
-        //     Some(key) => {
-        //         self.key_map.remove(&key);
-        //         Some(key)
-        //     },
-        //     None => None
-        // }
-    // }
+}
+
+impl CacheReplacementPolicy for Clock {
+    fn new() -> Self {
+        Clock {
+            hand: 0,
+            referenced: Vec::new(),
+         }
+    }
+
+    fn update(&mut self, index: usize) -> Option<usize> {
+        self.referenced.insert(index, true);
+        None
+    }
+
+    fn remove(&mut self, index: usize) {
+        self.referenced.remove(index);
+    }
+    
+    fn evict_next(&mut self) -> Option<usize> {
+        println!("{}, {:?}", self.hand, self.referenced);
+        
+        let target_key: Key;
+        'outer: loop {
+            for value in self.referenced.iter_mut().skip(self.hand) {
+                self.hand += 1;
+
+                if *value {
+                    *value = false;
+                } else {
+                    break 'outer;
+                }
+            }
+
+            self.hand = 0;
+        }
+
+        self.referenced.remove(self.hand - 1);
+        Some(self.hand - 1)
+    }
 }
