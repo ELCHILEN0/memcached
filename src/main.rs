@@ -9,7 +9,7 @@ use packet::{MemPacket, MemHeader};
 mod packet;
 
 use cache::cache::Cache;
-use cache::storage_structure::{CacheStorageStructure, HashStorageStructure};
+use cache::storage_structure::{CacheStorageStructure, NaiveStorageStructure};
 use cache::replacement_policy::{CacheReplacementPolicy, LRU, Clock};
 mod cache;
 
@@ -22,8 +22,9 @@ fn handle_client(mut stream: TcpStream) {
             item_lifetime: 60 * 1000,
             max_key_len: 256,
             max_val_len: 512,
-            storage_structure: HashStorageStructure::new(),
-            replacement_policy: Clock::new(),
+            storage_structure: NaiveStorageStructure::new(),
+            replacement_policy: LRU::new(),
+            // replacement_policy: Clock::new(),
 
     };
 

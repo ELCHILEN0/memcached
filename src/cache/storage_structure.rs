@@ -23,92 +23,192 @@ pub trait CacheStorageStructure {
 
     fn size(&self) -> usize;
 
-    fn get(&mut self, key: Key) -> Option<DataEntry>;
-    fn set(&mut self, key: Key, value: Value) -> Result<usize, CacheError>;
-    fn remove(&mut self, key: Key) -> Result<DataEntry, CacheError>;
-    fn contains(&mut self, key: Key) -> bool;
+    // TODO: Cleanup these convoluted return types
+    
+    /**
+     * Returns the index and entry if it exists
+     */
+    fn get(&mut self, key: Key) -> Option<(usize, DataEntry)>;
+    fn get_index(&mut self, index: usize) -> Option<(usize, DataEntry)>;
 
-    fn get_index(&mut self, key: Key) -> Option<usize>;
-    fn get_with_index(&mut self, index: usize) -> Option<DataEntry>;
-    fn move_entry(&mut self, key: Key, index: usize) -> Result<(), CacheError>;
+    /**
+     * Set a key, value pair and return the new index and the removed entry if it exists
+     */
+    fn set(&mut self, key: Key, value: Value) -> (usize, Option<DataEntry>);
+    fn set_index(&mut self, index: usize, key: Key, value: Value) -> (usize, Option<DataEntry>);
+
+    /**
+     * Remove a key, value pair and return the old index and entry if it exists
+     */
+    fn remove(&mut self, key: Key) -> Option<(usize, DataEntry)>;
+    fn remove_index(&mut self, index: usize) -> Option<(usize, DataEntry)>;
+
+    fn contains(&mut self, key: Key) -> bool;
 }
 
-pub struct HashStorageStructure {
-    rid_map: HashMap<Key, usize>,
+/**
+ * A naive storage structure with O(n) insert, lookup, and delete.
+ */
+pub struct NaiveStorageStructure {
     data: Vec<DataEntry>,
     size: usize,
 }
 
-impl CacheStorageStructure for HashStorageStructure {
+impl CacheStorageStructure for NaiveStorageStructure {
     fn new() -> Self {
-        HashStorageStructure {
-            rid_map: HashMap::new(),
+        NaiveStorageStructure {
             data: Vec::new(),
-            size: 0
+            size: 0,
         }
-    }    
+    }
 
     fn size(&self) -> usize {
         self.size
     }
 
-    fn get(&mut self, key: Key) -> Option<DataEntry> {
-        match self.rid_map.get(&key).cloned() {
-            Some(index) => Some(self.data[index].clone()),
+    fn get(&mut self, key: Key) -> Option<(usize, DataEntry)> {
+        let mut index: usize = 0;
+        for entry in self.data.clone().into_iter() {
+            if entry.key == key {
+                return self.get_index(index);
+            }
+            index += 1;
+        }
+
+        None
+    }
+
+    fn get_index(&mut self, index: usize) -> Option<(usize, DataEntry)> {
+        match self.data.get(index) {
+            Some(entry) => Some((index, entry.clone())),
+            None => None
+        }
+    }    
+
+    fn set(&mut self, key: Key, value: Value) -> (usize, Option<DataEntry>) {
+        let new = DataEntry::new(key.clone(), value);
+        self.size += new.len();  
+
+        match self.remove(key) {
+            Some((index, entry)) => {
+                self.data.insert(index, new);
+                (index, Some(entry))
+            },
+            None => {
+                self.data.push(new);
+                (self.data.len() - 1, None)
+            }
+        }
+    }
+
+    fn set_index(&mut self, index: usize, key: Key, value: Value) -> (usize, Option<DataEntry>) {
+        unimplemented!()
+    }    
+
+    fn remove(&mut self, key: Key) -> Option<(usize, DataEntry)> {
+        match self.get(key) {
+            Some((index, entry)) => self.remove_index(index),
             None => None
         }
     }
 
-    fn set(&mut self, key: Key, value: Value) -> Result<usize, CacheError> {
-        self.size += value.len();                
-        
-        let new = DataEntry::new(key.clone(), value);
-        match self.rid_map.get(&key).cloned() {
-            Some(index) => {
-                self.data.remove(index);
-                self.data.insert(index, new);
-                Ok(index)
-            },
-            None => {
-                self.data.push(new);
-                self.rid_map.insert(key, self.data.len() - 1);
-                Ok(self.data.len() - 1)
-            },
-        }
-    }
-
-    fn remove(&mut self, key: Key) -> Result<DataEntry, CacheError> {
-        match self.rid_map.get(&key).cloned() {
-            Some(index) => {
-                let removed = self.data.remove(index);
-                self.rid_map.remove(&key);
-                self.size -= removed.len();
-                Ok(removed)
-            },
-            None => Err(CacheError::KeyNotFound),
-        }
+    fn remove_index(&mut self, index: usize) -> Option<(usize, DataEntry)> {
+        let removed = self.data.remove(index);
+        self.size -= removed.len();
+        Some((index, removed.clone()))
     }
 
     fn contains(&mut self, key: Key) -> bool {
-        self.rid_map.contains_key(&key)
-    }
-
-    fn get_index(&mut self, key: Key) -> Option<usize> {
-        self.rid_map.get(&key).cloned()
-    }
-
-    fn get_with_index(&mut self, index: usize) -> Option<DataEntry> {
-        self.data.get(index).cloned()
-    }
-
-    fn move_entry(&mut self, key: Key, index: usize) -> Result<(), CacheError> {
-        match self.rid_map.get(&key).cloned() {
-            Some(index) => {
-                let removed = self.data.remove(index);
-                self.data.insert(index, removed);
-                Ok(())
-            },
-            None => Err(CacheError::KeyNotFound)
+        match self.get(key) {
+            Some(index) => true,
+            None => false
         }
     }
 }
+
+// pub struct HashStorageStructure {
+//     rid_map: HashMap<Key, usize>,
+//     data: Vec<DataEntry>,
+//     size: usize,
+// }
+
+// impl CacheStorageStructure for HashStorageStructure {
+//     fn new() -> Self {
+//         HashStorageStructure {
+//             rid_map: HashMap::new(),
+//             data: Vec::new(),
+//             size: 0
+//         }
+//     }    
+
+//     fn size(&self) -> usize {
+//         self.size
+//     }
+
+//     fn get(&mut self, key: Key) -> Option<DataEntry> {
+//         match self.rid_map.get(&key).cloned() {
+//             Some(index) => Some(self.data[index].clone()),
+//             None => None
+//         }
+//     }
+
+//     fn set(&mut self, key: Key, value: Value) -> Result<usize, CacheError> {
+//         self.size += value.len();                
+        
+//         let new = DataEntry::new(key.clone(), value);
+//         match self.rid_map.get(&key).cloned() {
+//             Some(index) => {
+//                 self.data.remove(index);
+//                 self.data.insert(index, new);
+//                 Ok(index)
+//             },
+//             None => {
+//                 self.data.push(new);
+//                 self.rid_map.insert(key, self.data.len() - 1);
+//                 Ok(self.data.len() - 1)
+//             },
+//         }
+//     }
+
+//     fn remove(&mut self, key: Key) -> Result<DataEntry, CacheError> {
+//         match self.rid_map.get(&key).cloned() {
+//             Some(index) => {
+//                 // TODO: Figure out more efficient way
+//                 let removed = self.data.remove(index);
+//                 let start_index = self.rid_map.get(&key.clone()).cloned().unwrap();
+//                 for k in self.data.iter_mut().skip(start_index) {
+//                     let new_index = self.rid_map.get(&k.key).unwrap() - 1;
+//                     self.rid_map.insert(k.key.clone(), new_index);
+//                 }
+//                 self.rid_map.remove(&key);
+//                 self.size -= removed.len();
+
+//                 Ok(removed)
+//             },
+//             None => Err(CacheError::KeyNotFound),
+//         }
+//     }
+
+//     fn contains(&mut self, key: Key) -> bool {
+//         self.rid_map.contains_key(&key)
+//     }
+
+//     fn get_index(&mut self, key: Key) -> Option<usize> {
+//         self.rid_map.get(&key).cloned()
+//     }
+
+//     fn get_with_index(&mut self, index: usize) -> Option<DataEntry> {
+//         self.data.get(index).cloned()
+//     }
+
+//     fn move_entry(&mut self, key: Key, index: usize) -> Result<(), CacheError> {
+//         match self.rid_map.get(&key).cloned() {
+//             Some(index) => {
+//                 let removed = self.data.remove(index);
+//                 self.data.insert(index, removed);
+//                 Ok(())
+//             },
+//             None => Err(CacheError::KeyNotFound)
+//         }
+//     }
+// }

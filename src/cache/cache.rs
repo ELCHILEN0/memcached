@@ -18,13 +18,16 @@ pub struct Cache<T, R> {
 
 impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
     pub fn get(&mut self, key: Key) -> Option<DataEntry> {
-        self.storage_structure.get(key)
+        match self.storage_structure.get(key) {
+            Some((index, entry)) => Some(entry),
+            None => None
+        }
     }
 
     pub fn set(&mut self, key: Key, value: Value) -> Result<(), CacheError> {
         // Ensure that adding a new element will not overflow the capacity of the cache
         let current_elem_size = match self.storage_structure.get(key.clone()) {
-            Some(value) => value.len(),
+            Some((curr_index, curr_entry)) => curr_entry.len(),
             None => 0,
         };
 
@@ -37,27 +40,24 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
             try!(self.evict_next());
         }
 
-        // Add/Update the value in the cache, return its current index
-        let index = try!(self.storage_structure.set(key.clone(), value));
+        // Add/Update the value in the cache
+        let (index, entry) = self.storage_structure.set(key.clone(), value);
+        self.replacement_policy.update(index);
         // Update the associated cache replacement policy, returning the new index, move it there
-        match self.replacement_policy.update(index) {
-            Some(new_index) => try!(self.storage_structure.move_entry(key, new_index)),
-            None => {}
-        }
+        // match self.replacement_policy.update(index) {
+        //     Some(new_index) => try!(self.storage_structure.move_entry(key, new_index)),
+        //     None => {}
+        // }
         
         Ok(())
     }
 
     pub fn remove(&mut self, key: Key) {
-        // TODO: Remove index
-        match self.storage_structure.get_index(key.clone()) {
-            Some(index) => {
+        match self.storage_structure.remove(key) {
+            Some((index, entry)) => {
                 self.replacement_policy.remove(index);
-                self.storage_structure.remove(key);
             },
-            None => {
-                self.storage_structure.remove(key);
-            },
+            None => {},
         };
     }
 
@@ -69,15 +69,8 @@ impl <T: CacheStorageStructure, R: CacheReplacementPolicy> Cache<T, R> {
         // Determine the next candidate and remove it
         match self.replacement_policy.evict_next() {
             Some(evict_index) => {
-                // Given an index, find the entry
-                match self.storage_structure.get_with_index(evict_index) {
-                    Some(evict) => {
-                        // Remove the entry from the cache
-                        match self.storage_structure.remove(evict.key) {
-                            Ok(evicted_value) => Ok(()),
-                            Err(err) => Err(CacheError::EvictionFailure)
-                        }
-                    },
+                match self.storage_structure.remove_index(evict_index) {
+                    Some((index, evicted)) => Ok(()),
                     None => Err(CacheError::EvictionFailure)
                 }
             },
