@@ -1,8 +1,5 @@
-use std::collections::{HashMap, VecDeque};
-use linked_hash_map::LinkedHashMap;
+use std::collections::{VecDeque};
 
-use cache::key::Key;
-use cache::value::Value;
 use cache::error::CacheError;
 
 pub trait CacheReplacementPolicy {

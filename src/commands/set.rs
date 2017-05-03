@@ -1,5 +1,4 @@
-use packet::{MemPacket, MemHeader};
-use command;
+use packet::MemPacket;
 
 use cache::cache::Cache;
 use cache::key::Key;
@@ -15,7 +14,7 @@ fn set<T: CacheStorageStructure, R: CacheReplacementPolicy>(request: MemPacket, 
             response.header.with_status(0x0000);
             response.header.with_cas(0x0000000000000001);
         },
-        Err(err) => {
+        Err(_) => {
             response.header.with_status(0x0084);
         }
     }

@@ -1,12 +1,11 @@
 use std::borrow::Borrow;
-use packet::{MemPacket, MemHeader};
+use packet::MemPacket;
 
 use cache::cache::Cache;
 use cache::storage_structure::CacheStorageStructure;
 use cache::replacement_policy::CacheReplacementPolicy;
 
 use commands;
-use cache;
 
 fn handle_command<T: CacheStorageStructure, R: CacheReplacementPolicy>(packet: MemPacket, cache: &mut Cache<T, R>) -> Option<MemPacket> {
     println!("handle_command");

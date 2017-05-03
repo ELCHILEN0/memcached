@@ -1,9 +1,7 @@
-use packet::{MemPacket, MemHeader};
-use command;
+use packet::MemPacket;
 
 use cache::cache::Cache;
 use cache::key::Key;
-use cache::value::Value;
 use cache::storage_structure::CacheStorageStructure;
 use cache::replacement_policy::CacheReplacementPolicy;
 

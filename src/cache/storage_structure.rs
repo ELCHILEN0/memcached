@@ -1,22 +1,16 @@
-use std::collections::HashMap;
-
 use cache::key::Key;
-use cache::value::Value;
 use cache::data_entry::DataEntry;
-use cache::replacement_policy::CacheReplacementPolicy;
-
-use cache::error::CacheError;
 
 /**
- * TODO: Currently we maintain two separate data structures for storage and for maintaining the cache.
- * This does not allow us to make optimizations to the storage in terms related to the replacement
- * policies.  e.g. LRU reorders entries on insert and requires no additional storage
- *
- * To meet this goal we should expose an interface for storage that allows us to restructure while
- * maintaining all storage indexes and data.  Think a move_to_index(Key, index).  If we constrain every
- * storage structure to be simply a Vec<Value> with keys indexing to unique elements then move to simply
- * has to update the keys to point to the new index, easy!  The replacement policy can now return an
- * an index when a value is updated that will trigger the rebuild of the structure!
+ * With the current layout there must be two highly associated data sructures for maintaining the
+ * cache.  The storage_structure maintains the data while the replacement_policy maintains indexed
+ * data regarding the state of the entries in the cache.  With some replacment policies it is
+ * possible to obtain better storage space by removing the dependency on the replacement policy
+ * structure (e.g. LRU reorders structure entries on insert and the policy simply returns 0).
+ * However, this tends to make the dependencies between the two traits tricky to manage and for
+ * more practical replacement policies the extra overhead is often needed regardless.  Also keep in
+ * mind that for different types of data structures the indexing scheme might change and may not
+ * be able to support a reordering replacement policy.
  */
 pub trait CacheStorageStructure {
     fn new() -> Self;
@@ -104,7 +98,7 @@ impl CacheStorageStructure for NaiveStorageStructure {
 
     fn remove(&mut self, key: Key) -> Option<(usize, DataEntry)> {
         match self.get(key) {
-            Some((index, entry)) => self.remove_index(index),
+            Some((index, _)) => self.remove_index(index),
             None => None
         }
     }
@@ -117,7 +111,7 @@ impl CacheStorageStructure for NaiveStorageStructure {
 
     fn contains(&mut self, key: Key) -> bool {
         match self.get(key) {
-            Some(index) => true,
+            Some(_) => true,
             None => false
         }
     }
